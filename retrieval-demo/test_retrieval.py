@@ -2,7 +2,7 @@ import re
 
 from sentence_transformers import SentenceTransformer
 
-from retrieval import retrieve_relevant_chunk
+from retrieval import retrieve_relevant_chunk, retrieve_top_k_chunks
 
 
 def split_into_sentences(text):
@@ -72,7 +72,16 @@ best_chunk, best_score = retrieve_relevant_chunk(
     model,
 )
 
-print(f"Question: {question}")
-print("\nRetrieved chunk:")
-print(best_chunk)
-print(f"\nSimilarity score: {best_score:.4f}")
+top_chunks = retrieve_top_k_chunks(
+    question,
+    chunks,
+    chunk_embeddings,
+    model,
+    top_k=3,
+)
+
+print("\nTop 3 relevant chunks:")
+
+for index, (chunk, score) in enumerate(top_chunks, start=1):
+    print(f"\nRank {index} - Similarity: {score:.4f}")
+    print(chunk)
