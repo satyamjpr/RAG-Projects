@@ -59,3 +59,41 @@ def retrieve_top_k_chunks(
         (chunks[index], similarities[index])
         for index in ranked_indices
     ]
+
+
+def retrieve_with_threshold(
+    question,
+    chunks,
+    chunk_embeddings,
+    model,
+    top_k=3,
+    min_similarity=0.4,
+):
+    """
+    Retrieve relevant chunks only when their similarity meets the threshold.
+
+    Args:
+        question: The user's question.
+        chunks: A list of document chunks.
+        chunk_embeddings: Embeddings generated for the document chunks.
+        model: The sentence-transformer model.
+        top_k: Maximum number of chunks to retrieve.
+        min_similarity: Minimum similarity score required for a chunk
+            to be considered relevant.
+
+    Returns:
+        A list of relevant chunks with their similarity scores.
+    """
+    retrieved_chunks = retrieve_top_k_chunks(
+        question,
+        chunks,
+        chunk_embeddings,
+        model,
+        top_k,
+    )
+
+    return [
+        (chunk, score)
+        for chunk, score in retrieved_chunks
+        if score >= min_similarity
+    ]
