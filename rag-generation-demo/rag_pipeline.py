@@ -1,5 +1,6 @@
 from context_builder import build_context
 from mock_llm import generate_mock_answer
+from mock_llm import generate_question_aware_answer
 from prompt_builder import build_rag_prompt
 from retrieval import retrieve_top_k_chunks
 from retrieval import retrieve_with_threshold
@@ -94,3 +95,54 @@ def run_threshold_rag_pipeline(
     )
 
     return generate_mock_answer(prompt)
+
+
+def run_question_aware_rag_pipeline(
+    question,
+    chunks,
+    chunk_embeddings,
+    model,
+    top_k=3,
+    min_similarity=0.4,
+):
+    """
+    Run a RAG pipeline using threshold-based retrieval and
+    question-aware answer generation.
+
+    The pipeline retrieves relevant chunks, filters them using a
+    similarity threshold, builds the context, creates a RAG prompt,
+    and generates an answer based on both the question and context.
+
+    Args:
+        question: The user's question.
+        chunks: A list of document chunks.
+        chunk_embeddings: Embeddings generated for the document chunks.
+        model: The sentence-transformer model used for retrieval.
+        top_k: Maximum number of chunks to retrieve.
+        min_similarity: Minimum similarity score required for a chunk
+            to be considered relevant.
+
+    Returns:
+        The generated answer, or a fallback message when no relevant
+        information is found.
+    """
+    retrieved_chunks = retrieve_with_threshold(
+        question,
+        chunks,
+        chunk_embeddings,
+        model,
+        top_k,
+        min_similarity,
+    )
+
+    if not retrieved_chunks:
+        return "The answer could not be found in the provided context."
+
+    context = build_context(retrieved_chunks)
+
+    prompt = build_rag_prompt(
+        context,
+        question,
+    )
+
+    return generate_question_aware_answer(prompt)
