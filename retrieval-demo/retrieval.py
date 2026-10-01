@@ -97,3 +97,80 @@ def retrieve_with_threshold(
         for chunk, score in retrieved_chunks
         if score >= min_similarity
     ]
+
+
+def evaluate_retrieval_result(
+    retrieved_chunks,
+    expected_keyword,
+):
+    """
+    Check whether retrieved chunks contain the expected information.
+
+    Args:
+        retrieved_chunks: Retrieved chunks with similarity scores.
+        expected_keyword: A keyword expected to appear in relevant content.
+
+    Returns:
+        True if the expected keyword is found in any retrieved chunk,
+        otherwise False.
+    """
+    keyword = expected_keyword.lower()
+
+    return any(
+        keyword in chunk.lower()
+        for chunk, _ in retrieved_chunks
+    )
+
+
+def evaluate_retrieval_dataset(
+    evaluation_dataset,
+    chunks,
+    chunk_embeddings,
+    model,
+    top_k=3,
+):
+    """
+    Evaluate retrieval performance using a collection of test questions.
+
+    Each test case contains a question and an expected keyword.
+    The function retrieves relevant chunks and checks whether the
+    expected information appears in the retrieved results.
+
+    Args:
+        evaluation_dataset: List of test cases containing questions
+            and their expected keywords.
+        chunks: Document chunks available for retrieval.
+        chunk_embeddings: Embeddings generated for document chunks.
+        model: The sentence-transformer model used for retrieval.
+        top_k: Number of chunks to retrieve for each question.
+
+    Returns:
+        A list of evaluation results containing each question,
+        expected keyword, and whether the information was retrieved.
+    """
+    evaluation_results = []
+
+    for test_case in evaluation_dataset:
+        question = test_case["question"]
+        expected_keyword = test_case["expected_keyword"]
+
+        retrieved_chunks = retrieve_top_k_chunks(
+            question,
+            chunks,
+            chunk_embeddings,
+            model,
+            top_k,
+        )
+
+        is_relevant = any(
+            expected_keyword.lower() in chunk.lower()
+            for chunk, _ in retrieved_chunks
+        )
+
+        evaluation_results.append({
+            "question": question,
+            "expected_keyword": expected_keyword,
+            "retrieved": is_relevant,
+        })
+
+    return evaluation_results
