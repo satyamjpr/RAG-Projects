@@ -132,9 +132,9 @@ def evaluate_retrieval_dataset(
     """
     Evaluate retrieval performance using a collection of test questions.
 
-    Each test case contains a question and an expected keyword.
-    The function retrieves relevant chunks and checks whether the
-    expected information appears in the retrieved results.
+    Each test case contains a question and expected keywords.
+    Retrieved chunks are checked against these keywords to calculate
+    precision and recall for each question.
 
     Args:
         evaluation_dataset: List of test cases containing questions
@@ -145,14 +145,17 @@ def evaluate_retrieval_dataset(
         top_k: Number of chunks to retrieve for each question.
 
     Returns:
-        A list of evaluation results containing each question,
-        expected keyword, and whether the information was retrieved.
+        A list of evaluation results containing retrieved chunk counts,
+        relevant chunk counts, precision, and recall.
     """
     evaluation_results = []
 
     for test_case in evaluation_dataset:
         question = test_case["question"]
-        expected_keyword = test_case["expected_keyword"]
+        expected_keywords = [
+            keyword.lower()
+            for keyword in test_case["expected_keywords"]
+        ]
 
         retrieved_chunks = retrieve_top_k_chunks(
             question,
@@ -162,15 +165,36 @@ def evaluate_retrieval_dataset(
             top_k,
         )
 
-        is_relevant = any(
-            expected_keyword.lower() in chunk.lower()
+        relevant_chunks = [
+            chunk
             for chunk, _ in retrieved_chunks
+            if any(
+                keyword in chunk.lower()
+                for keyword in expected_keywords
+            )
+        ]
+
+        relevant_retrieved = len(relevant_chunks)
+        total_retrieved = len(retrieved_chunks)
+
+        precision = (
+            relevant_retrieved / total_retrieved
+            if total_retrieved
+            else 0.0
+        )
+
+        recall = (
+            relevant_retrieved / len(expected_keywords)
+            if expected_keywords
+            else 0.0
         )
 
         evaluation_results.append({
             "question": question,
-            "expected_keyword": expected_keyword,
-            "retrieved": is_relevant,
+            "retrieved_count": total_retrieved,
+            "relevant_retrieved": relevant_retrieved,
+            "precision": precision,
+            "recall": recall,
         })
 
     return evaluation_results

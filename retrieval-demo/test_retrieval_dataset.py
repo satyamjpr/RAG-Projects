@@ -43,19 +43,23 @@ results = evaluate_retrieval_dataset(
 print("Retrieval Evaluation Results:\n")
 
 for result in results:
-    status = "PASS" if result["retrieved"] else "FAIL"
-
     print(f"Question: {result['question']}")
-    print(f"Expected Keyword: {result['expected_keyword']}")
-    print(f"Result: {status}")
+    print(f"Retrieved Chunks: {result['retrieved_count']}")
+    print(f"Relevant Retrieved: {result['relevant_retrieved']}")
+    print(f"Precision: {result['precision']:.2f}")
+    print(f"Recall: {result['recall']:.2f}")
     print("-" * 60)
 
 
-passed = sum(
-    1 for result in results
-    if result["retrieved"]
-)
+if results:
+    average_precision = sum(
+        result["precision"] for result in results
+    ) / len(results)
 
-total = len(results)
+    average_recall = sum(
+        result["recall"] for result in results
+    ) / len(results)
 
-print(f"\nEvaluation Summary: {passed}/{total} questions passed.")
+    print("\nOverall Evaluation:")
+    print(f"Average Precision: {average_precision:.2f}")
+    print(f"Average Recall: {average_recall:.2f}")
