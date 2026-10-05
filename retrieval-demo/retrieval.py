@@ -198,3 +198,92 @@ def evaluate_retrieval_dataset(
         })
 
     return evaluation_results
+
+
+def evaluate_retrieval_with_ground_truth(
+    evaluation_dataset,
+    chunks,
+    chunk_embeddings,
+    model,
+    top_k=3,
+):
+    """
+    Evaluate retrieval quality using ground-truth chunk indexes.
+
+    Precision measures how many retrieved chunks are relevant.
+    Recall measures how many relevant chunks were successfully retrieved.
+    F1 score combines precision and recall into a single metric.
+
+    Args:
+        evaluation_dataset: Test cases containing questions and relevant
+            chunk indexes.
+        chunks: Document chunks available for retrieval.
+        chunk_embeddings: Embeddings generated for document chunks.
+        model: The sentence-transformer model used for retrieval.
+        top_k: Number of chunks to retrieve for each question.
+
+    Returns:
+        A list of evaluation results containing precision, recall,
+        and F1 score for each question.
+    """
+    evaluation_results = []
+
+    for test_case in evaluation_dataset:
+        question = test_case["question"]
+        relevant_chunk_indexes = set(test_case["relevant_chunks"])
+
+        retrieved_chunks = retrieve_top_k_chunks(
+            question,
+            chunks,
+            chunk_embeddings,
+            model,
+            top_k,
+        )
+
+        retrieved_indexes = {
+            chunks.index(chunk)
+            for chunk, _ in retrieved_chunks
+        }
+
+        true_positives = len(
+            retrieved_indexes & relevant_chunk_indexes
+        )
+
+        false_positives = len(
+            retrieved_indexes - relevant_chunk_indexes
+        )
+
+        false_negatives = len(
+            relevant_chunk_indexes - retrieved_indexes
+        )
+
+        precision = (
+            true_positives / (true_positives + false_positives)
+            if true_positives + false_positives
+            else 0.0
+        )
+
+        recall = (
+            true_positives / (true_positives + false_negatives)
+            if true_positives + false_negatives
+            else 0.0
+        )
+
+        f1_score = (
+            2 * precision * recall / (precision + recall)
+            if precision + recall
+            else 0.0
+        )
+
+        evaluation_results.append({
+            "question": question,
+            "retrieved_count": len(retrieved_indexes),
+            "true_positives": true_positives,
+            "false_positives": false_positives,
+            "false_negatives": false_negatives,
+            "precision": precision,
+            "recall": recall,
+            "f1_score": f1_score,
+        })
+
+    return evaluation_results
