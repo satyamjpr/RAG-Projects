@@ -287,3 +287,49 @@ def evaluate_retrieval_with_ground_truth(
         })
 
     return evaluation_results
+
+
+
+def retrieve_top_k_with_threshold(
+    question,
+    chunks,
+    chunk_embeddings,
+    model,
+    top_k=3,
+    threshold=0.5,
+):
+    """
+    Retrieve the top-K chunks and filter them by a minimum
+    similarity threshold.
+
+    Top-K limits the maximum number of candidate chunks, while
+    the threshold removes candidates whose similarity scores are
+    too low for the configured retrieval criteria.
+
+    Args:
+        question: User question to search for.
+        chunks: Document chunks available for retrieval.
+        chunk_embeddings: Precomputed embeddings for the chunks.
+        model: Sentence-transformer model used for retrieval.
+        top_k: Maximum number of chunks to retrieve.
+        threshold: Minimum similarity score required to keep a chunk.
+
+    Returns:
+        A list of (chunk, score) tuples that meet the threshold,
+        ordered by similarity score from highest to lowest.
+    """
+    retrieved_chunks = retrieve_top_k_chunks(
+        question,
+        chunks,
+        chunk_embeddings,
+        model,
+        top_k,
+    )
+
+    filtered_chunks = [
+        (chunk, score)
+        for chunk, score in retrieved_chunks
+        if score >= threshold
+    ]
+
+    return filtered_chunks
